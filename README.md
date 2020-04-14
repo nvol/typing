@@ -9,5 +9,5 @@ to check your typing rate
 Сборка проекта производилась компилятором `go` версии 1.14.
 
 ## Сборка
-`go get`
-`go build`
+`go get`  
+`go build`  
