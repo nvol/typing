@@ -8,6 +8,8 @@ to check your typing rate
 Программа предназначена для запуска в стандартной консоли Windows (cmd).
 Сборка проекта производилась компилятором `go` версии 1.14.
 
-## Сборка
-`go get`  
-`go build`  
+## Сборка и запуск
+```
+go get -u github.com/nvol/typing
+typing
+```
