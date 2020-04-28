@@ -4,6 +4,8 @@ import (
 	"errors"
 	"flag"
 	"io/ioutil"
+	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -11,7 +13,12 @@ import (
 	"github.com/fatih/color"
 )
 
-const maxLineLength = 70
+const (
+	maxLineLength       = 70
+	textStorageFilename = "typing.txt"
+	fetchFrom           = "https://raw.githubusercontent.com/nvol/typing/master/" +
+		textStorageFilename
+)
 
 var (
 	red       = color.New(color.FgWhite).Add(color.BgRed)
@@ -28,9 +35,13 @@ func main() {
 		return
 	}
 
+	if _, err := os.Stat(textStorageFilename); os.IsNotExist(err) {
+		fetchFile(fetchFrom, textStorageFilename)
+	}
+
 	println("Press ESC to quit.")
 
-	texts := loadTexts("typing.txt")
+	texts := loadTexts(textStorageFilename)
 	println(len(texts), "texts loaded")
 
 	if *beginWith > uint(len(texts)) {
@@ -231,4 +242,22 @@ func wrapWords(v string) string {
 	}
 	ret += string(r)
 	return ret
+}
+
+func fetchFile(from, to string) {
+	resp, err := http.Get(from)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	err = ioutil.WriteFile(to, b, 0644)
+	if err != nil {
+		panic(err)
+	}
 }
