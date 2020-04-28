@@ -2,6 +2,8 @@ package main
 
 import (
 	"errors"
+	"flag"
+	"io/ioutil"
 	"strings"
 	"time"
 
@@ -9,31 +11,45 @@ import (
 	"github.com/fatih/color"
 )
 
-var red = color.New(color.FgWhite).Add(color.BgRed)
-var grn = color.New(color.FgHiGreen)
+const maxLineLength = 70
+
+var (
+	red       = color.New(color.FgWhite).Add(color.BgRed)
+	grn       = color.New(color.FgHiGreen)
+	beginWith = flag.Uint("b", 1, "the text number to begin with")
+	needHelp  = flag.Bool("h", false, "this help")
+)
 
 func main() {
-	println("Press ESC to quit.")
+	flag.Parse()
 
-	// 1st level
-	if err := runTypingTest(
-		"Что нужно для того, чтобы разогреть коромысло? Вот парочка советов: используйте силу мысли!\n" +
-			"Не сдавайтесь, даже если кажется, что шансов 0... Просто поверьте в омлет. Ведь это возможно!\n" +
-			"И вот ещё: не откладывайте на завтра то, что можно было бы вообще не делать. Иногда бодрит.",
-	); err != nil {
-		println(err.Error())
+	if *beginWith == 0 || *needHelp {
+		flag.Usage()
 		return
 	}
 
-	// 2nd level
-	if err := runTypingTest(
-		"When I was working as a coachman at the post office, a shaggy geologist knocked on my door\n" +
-			"and, looking at the map on the white wall, he grinned at me. He told me how Taiga was crying.\n" +
-			"She's lonely without a man - they don't have a coachman at the post office.\n" +
-			"So it's time for us to hit the road!",
-	); err != nil {
-		println(err.Error())
+	println("Press ESC to quit.")
+
+	texts := loadTexts("typing.txt")
+	println(len(texts), "texts loaded")
+
+	if *beginWith > uint(len(texts)) {
+		println("Text", *beginWith, "not found!\n")
+		flag.Usage()
 		return
+	}
+
+	if *beginWith > 1 {
+		println("Beginning with the text number", *beginWith)
+	}
+
+	for _, text := range texts[*beginWith-1:] {
+		if err := runTypingTest(
+			text,
+		); err != nil {
+			println(err.Error())
+			return
+		}
 	}
 
 	println()
@@ -165,4 +181,54 @@ func waitForEscOrError() {
 			return
 		}
 	}
+}
+
+func loadTexts(filename string) (texts []string) {
+	texts = make([]string, 0, 128)
+
+	b, err := ioutil.ReadFile(filename)
+	if err != nil {
+		panic(err)
+	}
+
+	s := string(b)
+	s = strings.TrimSpace(s)
+	s = strings.ReplaceAll(s, "\r", "")
+	for strings.Contains(s, "\n\n\n") {
+		s = strings.ReplaceAll(s, "\n\n\n", "\n\n")
+	}
+	texts = strings.Split(s, "\n\n")
+
+	// wrap words for long lines
+	for ix := range texts {
+		texts[ix] = wrapWords(strings.TrimSpace(texts[ix]))
+	}
+
+	return
+}
+
+func wrapWords(v string) string {
+	if len([]rune(v)) <= maxLineLength {
+		return v
+	}
+
+	r := []rune(v)
+	ret := ""
+
+	for len(r) > maxLineLength {
+		ix := maxLineLength
+		for r[ix] != rune(' ') {
+			ix--
+			if ix < 0 {
+				panic(errors.New(
+					"cannot wrap words for [" + string(r[:(maxLineLength>>1)]) + "...]",
+				))
+			}
+		}
+
+		ret += string(r[:ix]) + "\n"
+		r = r[ix+1:]
+	}
+	ret += string(r)
+	return ret
 }
