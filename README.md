@@ -15,4 +15,11 @@ go get -u github.com/nvol/typing
 typing
 ```
 
-## Возможности
+## Дополнительные возможности
+Программа позволяет начать с любого текста из файла typing.txt, достаточно лишь указать флаг -b с порядковым номером текста.
+```
+Usage:
+  -b uint
+        the text number to begin with (default 1)
+  -h    this help
+```
